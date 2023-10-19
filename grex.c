@@ -35,7 +35,15 @@ SOFTWARE.
   } \
 } while (0)
 
+#define GREX_REVERSE_EOF_CHECK(p) do { \
+  if ((int)(p->parsing_offset) < 0) { \
+    return GREX_EOF; \
+  } \
+} while (0)
+
 #define NEXT(p) if (!next(p)) { return GREX_EOF; }
+
+#define REVERSE_NEXT(p) if (!reverse_next(p)) { return GREX_EOF; }
 
 static inline int cur(grex_parser_t* p) {
   return p->input[p->parsing_offset];
@@ -46,6 +54,13 @@ static inline int next(grex_parser_t* p) {
     return 0;
   }
   return p->input[++p->parsing_offset];
+}
+
+static inline int reverse_next(grex_parser_t* p) {
+  if ((int)p->parsing_offset-1 < 0) {
+    return 0;
+  }
+  return p->input[--p->parsing_offset];
 }
 
 static void report_error(grex_parser_t* p, const char* where) {
@@ -69,6 +84,10 @@ void grex_parser_destroy(grex_parser_t* p) {
 
 void grex_parser_reset(grex_parser_t* p) {
   p->parsing_offset = 0;
+}
+
+void grex_parser_end(grex_parser_t* p) {
+  p->parsing_offset = p->input_length;
 }
 
 void grex_parser_set_error_callback(grex_parser_t* p, grex_error_callback_t cb, void* arg) {
@@ -146,6 +165,24 @@ grex_result_t grex_sequence(grex_parser_t* p, const char* seq) {
   return GREX_OK;
 }
 
+grex_result_t grex_sequence_reverse(grex_parser_t* p, const char* seq) {
+  GREX_REVERSE_EOF_CHECK(p);
+
+  int n = strlen(seq);
+  if (p->parsing_offset - n < 0) {
+    report_error(p, "grex_sequence_reverse");
+    return GREX_NO_MATCH;
+  }
+
+  if (memcmp(&p->input[p->parsing_offset - n], seq, n)) {
+    report_error(p, "grex_sequence_reverse");
+    return GREX_NO_MATCH;
+  }
+
+  p->parsing_offset -= n;
+  return GREX_OK;
+}
+
 grex_result_t grex_while(grex_parser_t* p, unsigned c) {
   GREX_EOF_CHECK(p);
 
@@ -192,12 +229,33 @@ grex_result_t grex_while_sequence(grex_parser_t* p, const char* seq) {
   return result;
 }
 
+grex_result_t grex_while_sequence_reverse(grex_parser_t* p, const char* seq) {
+  int result = grex_sequence_reverse(p, seq);
+
+  while (result == GREX_OK) {
+    result = grex_sequence_reverse(p, seq);
+  }
+
+  return result;
+}
+
 grex_result_t grex_until_sequence(grex_parser_t* p, const char* seq) {
   int result = grex_sequence(p, seq);
 
   while (result == GREX_NO_MATCH) {
     NEXT(p);
     result = grex_sequence(p, seq);
+  }
+
+  return result;
+}
+
+grex_result_t grex_until_sequence_reverse(grex_parser_t* p, const char* seq) {
+  int result = grex_sequence_reverse(p, seq);
+
+  while (result == GREX_NO_MATCH) {
+    REVERSE_NEXT(p);
+    result = grex_sequence_reverse(p, seq);
   }
 
   return result;

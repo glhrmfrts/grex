@@ -56,9 +56,13 @@ void grex_parser_init(grex_parser_t* p, const char* input, unsigned length);
 /// @param p
 void grex_parser_destroy(grex_parser_t* p);
 
-/// @brief Reset the parsing reading head to the start of the input
+/// @brief Reset the parser's reading head to the start of the input
 /// @param p
 void grex_parser_reset(grex_parser_t* p);
+
+/// @brief Set the parser's reading head to the end of the input
+/// @param p
+void grex_parser_end(grex_parser_t* p);
 
 /// @brief Sets an error callback for the parser
 /// @param p
@@ -94,11 +98,19 @@ grex_result_t grex_set(grex_parser_t* p, const char* set);
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
 grex_result_t grex_range(grex_parser_t* p, const char* range);
 
-/// @brief Matches a sequence of characters
+/// @brief Matches a sequence of characters.
+/// When the function returns, the parsing head is at the start of the sequence.
 /// @param p
 /// @param seq
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
 grex_result_t grex_sequence(grex_parser_t* p, const char* seq);
+
+/// @brief Matches a sequence of characters, from the end to the beginning.
+/// When the function returns, the parsing head is at the start of the sequence.
+/// @param p
+/// @param seq
+/// @return
+grex_result_t grex_sequence_reverse(grex_parser_t* p, const char* seq);
 
 /// @brief Keep advancing while the current character is equal
 /// @param p
@@ -118,11 +130,25 @@ grex_result_t grex_until(grex_parser_t* p, unsigned c);
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
 grex_result_t grex_while_sequence(grex_parser_t* p, const char* seq);
 
+/// @brief Keep receding while the sequence of characters matches
+/// @param p
+/// @param seq
+/// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
+grex_result_t grex_while_sequence_reverse(grex_parser_t* p, const char* seq);
+
 /// @brief Keep advancing while the sequence of characters does not match
+/// When the function returns, the parsing head is at the end of the sequence.
 /// @param p
 /// @param seq
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
 grex_result_t grex_until_sequence(grex_parser_t* p, const char* seq);
+
+/// @brief Keep receding while the sequence of characters does not match
+/// When the function returns, the parsing head is at the start of the sequence.
+/// @param p
+/// @param seq
+/// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
+grex_result_t grex_until_sequence_reverse(grex_parser_t* p, const char* seq);
 
 /// @brief Matches an integer number
 /// @param p
