@@ -1,8 +1,35 @@
+/**
+MIT License
+
+Copyright (c) 2023 Guilherme Freitas Nemeth
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #pragma once
 
-#define GREX_OK 0
-#define GREX_NO_MATCH 1
-#define GREX_EOF -1
+typedef enum grex_result {
+  GREX_OK = 0,
+  GREX_NO_MATCH = 1,
+  GREX_RANGE_ERR = 2,
+  GREX_EOF = -1,
+} grex_result_t;
 
 struct grex_parser;
 
@@ -12,6 +39,7 @@ typedef void (*grex_error_callback_t)(struct grex_parser*, const char* msg, void
 /// @brief The parser structure
 typedef struct grex_parser {
   const char* input;
+  const char* input_end;
   unsigned input_length;
   unsigned parsing_offset;
   grex_error_callback_t error_callback;
@@ -37,73 +65,103 @@ void grex_parser_set_error_callback(grex_parser_t* p, grex_error_callback_t cb, 
 /// @brief Matches on whitespace, including line breaks and carriage returns
 /// @param p
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
-int grex_whitespace(grex_parser_t* p);
+grex_result_t grex_whitespace(grex_parser_t* p);
 
 /// @brief Matches on whitespace, NOT including line breaks and carriage returns
 /// @param p
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
-int grex_whitespace_no_line(grex_parser_t* p);
+grex_result_t grex_whitespace_no_line(grex_parser_t* p);
 
 /// @brief Matches on specific character
 /// @param p
 /// @param c
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
-int grex_char(grex_parser_t* p, int c);
+grex_result_t grex_char(grex_parser_t* p, int c);
 
 /// @brief Matches a set of characters
 /// @param p
 /// @param set
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
-int grex_set(grex_parser_t* p, const char* set);
+grex_result_t grex_set(grex_parser_t* p, const char* set);
 
 /// @brief Matches an inclusive range of characters
 /// @param p
 /// @param range
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
-int grex_range(grex_parser_t* p, const char* range);
+grex_result_t grex_range(grex_parser_t* p, const char* range);
+
+/// @brief Matches a sequence of characters
+/// @param p
+/// @param seq
+/// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
+grex_result_t grex_sequence(grex_parser_t* p, const char* seq);
+
+/// @brief Keep advancing while the current character is equal
+/// @param p
+/// @param seq
+/// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
+grex_result_t grex_while(grex_parser_t* p, unsigned c);
+
+/// @brief Keep advancing while the current character is not equal
+/// @param p
+/// @param seq
+/// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
+grex_result_t grex_until(grex_parser_t* p, unsigned c);
+
+/// @brief Keep advancing while the sequence of characters matches
+/// @param p
+/// @param seq
+/// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
+grex_result_t grex_while_sequence(grex_parser_t* p, const char* seq);
+
+/// @brief Keep advancing while the sequence of characters does not match
+/// @param p
+/// @param seq
+/// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
+grex_result_t grex_until_sequence(grex_parser_t* p, const char* seq);
 
 /// @brief Matches an integer number
 /// @param p
 /// @param value
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
-int grex_integer(grex_parser_t* p, long long *value);
+grex_result_t grex_integer(grex_parser_t* p, int base, long long *value);
 
 /// @brief Matches an unsigned integer number
 /// @param p
 /// @param value
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
-int grex_uinteger(grex_parser_t* p, unsigned long long* value);
+grex_result_t grex_uinteger(grex_parser_t* p, int base, unsigned long long* value);
 
 /// @brief Matches a floating-point number
 /// @param p
 /// @param value
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
-int grex_float(grex_parser_t* p, double* value);
+grex_result_t grex_float(grex_parser_t* p, double* value);
 
 /// @brief Matches a C-like identifier sequence of characters
 /// @param p
 /// @param buf
 /// @param size
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
-int grex_identifier(grex_parser_t* p, char* buf, unsigned size);
+grex_result_t grex_identifier(grex_parser_t* p, char* buf, unsigned size);
 
 /// @brief Matches either a single or double quoted string
 /// @param p
 /// @param buf
 /// @param size
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
-int grex_string(grex_parser_t* p, char* buf, unsigned size);
+grex_result_t grex_string(grex_parser_t* p, char* buf, unsigned size);
 
 /// @brief Matches a single-quoted string
 /// @param p
 /// @param buf
 /// @param size
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
-int grex_single_quoted_string(grex_parser_t* p, char* buf, unsigned size);
+grex_result_t grex_single_quoted_string(grex_parser_t* p, char* buf, unsigned size);
 
 /// @brief Matches a double-quoted string
 /// @param p
 /// @param buf
 /// @param size
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
-int grex_double_quoted_string(grex_parser_t* p, char* buf, unsigned size);
+grex_result_t grex_double_quoted_string(grex_parser_t* p, char* buf, unsigned size);

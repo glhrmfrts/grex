@@ -13,42 +13,41 @@ static int read_file(const char* filename) {
   return 1;
 }
 
-int main(int argc, const char* argv[]) {
-  if (!read_file("test.ini")) {
-    return 1;
-  }
-
-  grex_parser_t p = {0};
-  grex_parser_init(&p, input, strlen(input));
-
+static void parse_properties(grex_parser_t* p) {
   static char key_buf[1024];
   static char value_buf[1024];
   static long long value_num;
   static double value_double;
 
-  while (grex_whitespace(&p) != GREX_EOF) {
-    if (grex_identifier(&p, key_buf, sizeof(key_buf))) break;
-    if (grex_whitespace(&p) == GREX_EOF) break;
-
-    if (grex_char(&p, '=')) break;
-    if (grex_whitespace(&p) == GREX_EOF) break;
-
-    if (!grex_float(&p, &value_double)) {
-      printf("float prop: %s = %f\n", key_buf, value_double);
-      continue;
+  while (grex_whitespace(p) != GREX_EOF) {
+    if (!grex_char(p, '#')) {
+      // comments
+      grex_until(p, '\n');
+      grex_whitespace(p);
     }
 
-    if (!grex_integer(&p, &value_num)) {
+    if (grex_identifier(p, key_buf, sizeof(key_buf))) break;
+    if (grex_whitespace(p) == GREX_EOF) break;
+
+    if (grex_char(p, '=')) break;
+    if (grex_whitespace(p) == GREX_EOF) break;
+
+    if (!grex_integer(p, 0, &value_num)) {
       printf("integer prop: %s = %lld\n", key_buf, value_num);
       continue;
     }
 
-    if (!grex_identifier(&p, value_buf, sizeof(value_buf))) {
+    if (!grex_float(p, &value_double)) {
+      printf("float prop: %s = %f\n", key_buf, value_double);
+      continue;
+    }
+
+    if (!grex_identifier(p, value_buf, sizeof(value_buf))) {
       printf("ident prop: %s = %s\n", key_buf, value_buf);
       continue;
     }
 
-    if (!grex_string(&p, value_buf, sizeof(value_buf))) {
+    if (!grex_string(p, value_buf, sizeof(value_buf))) {
       printf("string prop: %s = %s\n", key_buf, value_buf);
       continue;
     }
@@ -57,6 +56,24 @@ int main(int argc, const char* argv[]) {
     fprintf(stderr, "Invalid property: %s\n", key_buf);
     break;
   }
+}
+
+int main(int argc, const char* argv[]) {
+  if (!read_file("test.ini")) {
+    return 1;
+  }
+
+  grex_parser_t p = {0};
+  grex_parser_init(&p, input, strlen(input));
+
+  grex_whitespace(&p);
+  if (grex_sequence(&p, "[first_section]")) return 1;
+  printf("[first_section]\n");
+  parse_properties(&p);
+
+  if (grex_sequence(&p, "[second_section]")) return 1;
+  printf("[second_section]\n");
+  parse_properties(&p);
 
   grex_parser_destroy(&p);
 
