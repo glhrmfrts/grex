@@ -67,6 +67,10 @@ void grex_parser_init(grex_parser_t* p, const char* input, unsigned length) {
 void grex_parser_destroy(grex_parser_t* p) {
 }
 
+void grex_parser_reset(grex_parser_t* p) {
+  p->parsing_offset = 0;
+}
+
 void grex_parser_set_error_callback(grex_parser_t* p, grex_error_callback_t cb, void* arg) {
   p->error_callback = cb;
   p->error_callback_arg = arg;
@@ -393,4 +397,21 @@ grex_result_t grex_single_quoted_string(grex_parser_t* p, char* buf, unsigned si
 
 grex_result_t grex_double_quoted_string(grex_parser_t* p, char* buf, unsigned size) {
   return grex_delimited_string(p, '"', buf, size);
+}
+
+grex_result_t grex_capture_until(grex_parser_t* p, int c, char* buf, unsigned size) {
+  unsigned prev_offset = p->parsing_offset;
+
+  int result = grex_until(p, c);
+
+  if (result == GREX_OK) {
+    int n = p->parsing_offset - prev_offset;
+    if (n >= size) {
+      n = size - 1;
+    }
+    memset(buf, 0, size);
+    memcpy(buf, p->input + prev_offset, n);
+  }
+
+  return result;
 }

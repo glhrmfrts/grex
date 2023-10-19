@@ -75,6 +75,18 @@ int main(int argc, const char* argv[]) {
   printf("[second_section]\n");
   parse_properties(&p);
 
+  static char capbuf[200];
+  grex_parser_reset(&p);
+  grex_capture_until(&p, ']', capbuf, sizeof(capbuf));
+  printf("captured 1: %s\n", capbuf);
+
+  grex_parser_reset(&p);
+  grex_capture_until(&p, '\n', capbuf, sizeof(capbuf));
+  printf("captured 2: %s\n", capbuf);
+  grex_whitespace(&p);
+  grex_capture_until(&p, '\n', capbuf, sizeof(capbuf));
+  printf("captured 3: %s\n", capbuf);
+
   grex_parser_destroy(&p);
 
   return 0;

@@ -56,6 +56,10 @@ void grex_parser_init(grex_parser_t* p, const char* input, unsigned length);
 /// @param p
 void grex_parser_destroy(grex_parser_t* p);
 
+/// @brief Reset the parsing reading head to the start of the input
+/// @param p
+void grex_parser_reset(grex_parser_t* p);
+
 /// @brief Sets an error callback for the parser
 /// @param p
 /// @param cb
@@ -165,3 +169,11 @@ grex_result_t grex_single_quoted_string(grex_parser_t* p, char* buf, unsigned si
 /// @param size
 /// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
 grex_result_t grex_double_quoted_string(grex_parser_t* p, char* buf, unsigned size);
+
+/// @brief Capture all characters until a character matches
+/// @param p
+/// @param c
+/// @param buf
+/// @param size
+/// @return GREX_OK on success, GREX_NO_MATCH on invalid input, GREX_EOF on eof
+grex_result_t grex_capture_until(grex_parser_t* p, int c, char* buf, unsigned size);
